@@ -5,6 +5,12 @@ const {app} = require('../server');
 
 const {Todo} = require('../models/todo');
 
+const todos = [
+    {text:'Something to do 1'},
+    {text:'Something to do 2'},
+    {text:'Something to do 3'},
+]
+
 beforeEach((done)=>{
     Todo.remove({}).then(()=>{
         done();
@@ -57,5 +63,30 @@ describe('POST /todos',()=>{
                 done(err);
             })
         })
+    })
+
+});
+
+describe('GET /todos',()=>{
+
+
+    it('should return todos',(done)=>{
+        //before executing the GET request insert some dummy data into Todos collection
+        Todo.insertMany(todos);
+        request(app)
+            .get('/todos')
+            .expect(200)
+            .expect((res)=>{
+                expect(res.body.todos.length).toBe(todos.length);
+            })
+            .end((err,res)=>{
+                if (err){
+                    return done(err);
+                }
+                Todo.find().then((todos)=>{
+                    expect(todos.length).toBe(todos.length);
+                    done();
+                }).catch((err)=>done(err))
+            })
     })
 });
