@@ -90,3 +90,47 @@ describe('GET /todos',()=>{
             })
     })
 });
+
+describe('GET /todos/:id',()=>{
+
+
+    it('should return a todo',(done)=>{
+        //before executing the GET /todos/:id request insert a dcoument and get the id
+        Todo.create(todos[0]).then((doc)=>{
+            //console.log(doc);
+            var id = doc._id
+
+            request(app)
+                .get(`/todos/${id}`)
+                .expect(200)
+                .expect((res)=>{
+                    expect(res.body.todo._id).toBe(id.toHexString());
+                })
+                .end(done);
+        }).catch((err)=>done(err));
+    })
+
+    it('should return Not a valid document id',(done)=>{
+        var id = '3242';
+        request(app)
+            .get(`/todos/${id}`)
+            .expect(404)
+            .expect((res)=>{
+                expect(res.body.status).toBe('Error');
+                expect(res.body.message).toBe('Not a valid document id')
+            })
+            .end(done);
+    })
+
+    it('should return No match found',(done)=>{
+        var id = '6ae6ce510bcb09d83337a1ad'
+        request(app)
+            .get(`/todos/${id}`)
+            .expect(404)
+            .expect((res)=>{
+                expect(res.body.status).toBe('Warning')
+                expect(res.body.message).toBe('No match found')
+            })
+            .end(done)
+    })
+});

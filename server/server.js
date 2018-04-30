@@ -40,7 +40,7 @@ app.get('/todos/:id',(req,res)=>{
     Todo.findById(req.params.id)
         .then((todo)=>{
             if (!todo){
-                return res.status(404).send({status:'No match found'})
+                return res.status(404).send({status:'Warning',message:'No match found'})
             }
             res.status(200).send({status:'OK',todo});
         }).catch((err)=>{
