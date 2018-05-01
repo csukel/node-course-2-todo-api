@@ -134,3 +134,54 @@ describe('GET /todos/:id',()=>{
             .end(done)
     })
 });
+
+
+describe('DELETE /todos/:id',()=>{
+    it('should delete a todo using the id',(done)=>{
+        Todo.create(todos[0]).then((doc)=>{
+            //console.log(doc);
+            var id = doc._id
+
+            request(app)
+                .delete(`/todos/${id}`)
+                .expect(200)
+                .expect((res)=>{
+                    expect(res.body.todo._id).toBe(id.toHexString());
+                })
+                .end((err,res)=>{
+                    if (err){
+                        return done(err);
+                    }
+                    Todo.findById(id).then((todo)=>{
+                        expect(todo).toBeNull;
+                        done();
+                    })
+                });
+        }).catch((err)=>done(err));
+    });
+
+    it('should output an error msg Not a valid document id',(done)=>{
+        var id = '45';
+
+        request(app)
+            .delete(`/todos/${id}`)
+            .expect(404)
+            .expect((res)=>{
+                expect(res.body.status).toBe('Error')
+                expect(res.body.message).toBe('Not a valid document id')
+            })
+            .end(done);
+    });
+
+    it('should not delete a document and output msg No document found to remove',(done)=>{
+        var id = '6ae806025a0aa0ac294803f7';
+        request(app)
+            .delete(`/todos/${id}`)
+            .expect(404)
+            .expect((res)=>{
+                expect(res.body.status).toBe('Warning')
+                expect(res.body.message).toBe('No document found to remove')
+            })
+            .end(done)
+    });
+});
