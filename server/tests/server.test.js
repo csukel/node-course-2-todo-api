@@ -185,3 +185,60 @@ describe('DELETE /todos/:id',()=>{
             .end(done)
     });
 });
+
+describe('PATCH /todos/:id',()=>{
+    it('should update the todo',(done)=>{
+        Todo.create(todos[0]).then((doc)=>{
+            //console.log(doc);
+            var id = doc._id,
+                text = doc.text;
+
+            request(app)
+                .patch(`/todos/${id}`)
+                .expect(200)
+                .send({text:'Updated',completed:true})
+                .expect((res)=>{
+                    expect(res.body.todo.text).toBe('Updated');
+                    expect(res.body.todo.completed).toBeTruthy;
+                })
+                .end((err,res)=>{
+                    if (err){
+                        return done(err);
+                    }
+                    Todo.findById(id).then((todo)=>{
+                        expect(todo.text).toBe('Updated');
+                        done();
+                    })
+                });
+        }).catch((err)=>done(err));
+    })
+
+    it('should clear completedAt when todo is not completed',(done)=>{
+        Todo.create(todos[0]).then((doc)=>{
+            //console.log(doc);
+            var id = doc._id,
+                text = doc.text;
+
+            request(app)
+                .patch(`/todos/${id}`)
+                .send({text:'Updated',completed:true})
+                .expect((res)=>{
+                    expect(res.body.todo.completedAt).toBeDefined;
+                })
+                .end((err,res)=>{
+                    if (err){
+                        return done(err);
+                    }
+                    
+                    request(app)
+                        .patch(`/todos/${id}`)
+                        .send({text:"Updated without completed"})
+                        .expect((res)=>{
+                            expect(res.body.todo.text).toBe('Updated without completed');
+                            expect(res.body.todo.completedAt).toBeNull
+                        })
+                        .end(done);
+                });
+        }).catch((err)=>done(err));
+    })
+})
