@@ -4,6 +4,7 @@ const request = require('supertest');
 const {app} = require('../server');
 
 const {Todo} = require('../models/todo');
+const {User} = require('../models/user');
 
 const {todos,populateTodos,users,populateUsers} = require('./seed/seed');
 
@@ -273,7 +274,20 @@ describe('POST /users',()=>{
             .expect((res)=>{
                 expect(res.body).toInclude({email:user.email});
             })
-            .end(done);
+            .end((err)=>{
+                if (err){
+                    return done(err);
+                }
+                User.findOne({email:user.email})
+                    .then((res)=>{
+                        expect(res).toExist();
+                        expect(res.password).toNotBe(user.password);
+                        expect(res.email).toBe(user.email);
+                        done();
+                    },(e)=>{
+                        done(e);
+                    })
+            });
     });
 
     it('should return validation errors if email is invalid',(done)=>{
@@ -290,7 +304,16 @@ describe('POST /users',()=>{
                 expect(res.body.errors).toIncludeKey("email");
                 expect(res.body.errors).toNotIncludeKey("password");
             })
-            .end(done);
+            .end((err)=>{
+                if (err){
+                    done(err)
+                }
+                User.findOne({email:user.email})
+                    .then((res)=>{
+                        expect(res).toNotExist;
+                        done();
+                    })
+            });
     })
     it('should return validation errors if password is invalid',(done)=>{
         var user = {
@@ -306,7 +329,16 @@ describe('POST /users',()=>{
                 expect(res.body.errors).toIncludeKey("password");
                 expect(res.body.errors).toNotIncludeKey("email");
             })
-            .end(done);
+            .end((err)=>{
+                if (err){
+                    done(err)
+                }
+                User.findOne({email:user.email})
+                    .then((res)=>{
+                        expect(res).toNotExist;
+                        done();
+                    })
+            });
     })
     it('should return validation errors if both email and password are invalid',(done)=>{
         var user = {
@@ -322,7 +354,16 @@ describe('POST /users',()=>{
                 expect(res.body.errors).toIncludeKey("password");
                 expect(res.body.errors).toIncludeKey("email");
             })
-            .end(done);
+            .end((err)=>{
+                if (err){
+                    done(err)
+                }
+                User.findOne({email:user.email})
+                    .then((res)=>{
+                        expect(res).toNotExist;
+                        done();
+                    })
+            });
     })
 
     it('should not create user if email in use',(done)=>{
