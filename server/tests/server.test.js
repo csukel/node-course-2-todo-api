@@ -5,17 +5,10 @@ const {app} = require('../server');
 
 const {Todo} = require('../models/todo');
 
-const todos = [
-    {text:'Something to do 1'},
-    {text:'Something to do 2'},
-    {text:'Something to do 3'},
-]
+const {todos,populateTodos,users,populateUsers} = require('./seed/seed');
 
-beforeEach((done)=>{
-    Todo.remove({}).then(()=>{
-        done();
-    });
-});
+beforeEach(populateUsers);
+beforeEach(populateTodos);
 
 describe('POST /todos',()=>{
     it('should create a new todo',(done)=>{
@@ -241,4 +234,106 @@ describe('PATCH /todos/:id',()=>{
                 });
         }).catch((err)=>done(err));
     })
+})
+
+describe('GET /users/me',()=>{
+    it('should return user if authenticated',(done)=>{
+        request(app)
+            .get('/users/me')
+            .set('x-auth',users[0].tokens[0].token)
+            .expect(200)
+            .expect((res)=>{
+                expect(res.body._id).toBe(users[0]._id.toHexString());
+                expect(res.body.email).toBe(users[0].email);
+            })
+            .end(done)
+    });
+
+    it('should return a 401 if not authenticated and respones body should be empty',(done)=>{
+        request(app)
+            .get('/users/me')
+            .expect(401)
+            .expect((res)=>{
+                expect(res.body).toBeNull;
+            })
+            .end(done);
+    })
+})
+
+describe('POST /users',()=>{
+    it('should create a user',(done)=>{
+        var user = {
+            email : 'andrew@gmail.com',
+            password: '123456'
+        }
+        request(app)
+            .post('/users')
+            .send(user)
+            .expect(200)
+            .expect((res)=>{
+                expect(res.body).toInclude({email:user.email});
+            })
+            .end(done);
+    });
+
+    it('should return validation errors if email is invalid',(done)=>{
+        var user = {
+            email: 'sdfjl',
+            password: '123456'
+        } 
+        request(app)
+            .post('/users')
+            .send(user)
+            .expect(400)
+            .expect((res)=>{
+                expect(res.body.name).toBe('ValidationError')
+                expect(res.body.errors).toIncludeKey("email");
+                expect(res.body.errors).toNotIncludeKey("password");
+            })
+            .end(done);
+    })
+    it('should return validation errors if password is invalid',(done)=>{
+        var user = {
+            email: 'andrewa@gmail.com',
+            password: '12345'
+        } 
+        request(app)
+            .post('/users')
+            .send(user)
+            .expect(400)
+            .expect((res)=>{
+                expect(res.body.name).toBe('ValidationError')
+                expect(res.body.errors).toIncludeKey("password");
+                expect(res.body.errors).toNotIncludeKey("email");
+            })
+            .end(done);
+    })
+    it('should return validation errors if both email and password are invalid',(done)=>{
+        var user = {
+            email: 'sdfs',
+            password: '12345'
+        } 
+        request(app)
+            .post('/users')
+            .send(user)
+            .expect(400)
+            .expect((res)=>{
+                expect(res.body.name).toBe('ValidationError')
+                expect(res.body.errors).toIncludeKey("password");
+                expect(res.body.errors).toIncludeKey("email");
+            })
+            .end(done);
+    })
+
+    it('should not create user if email in use',(done)=>{
+        request(app)
+            .post('/users')
+            .send(users[0])
+            .expect(400)
+            .expect((res)=>{
+                expect(res.body.code).toBe(11000);
+                expect(res.body.errmsg).toInclude("duplicate key");
+            })
+            .end(done);
+    });
 })
