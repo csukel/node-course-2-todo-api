@@ -62,6 +62,18 @@ UserSchema.methods.generateAuthToken = function () {
 
 };
 
+UserSchema.methods.removeToken = function (token) {
+    var user = this;
+
+    return user.update({
+        $pull: {
+            tokens: {
+                token
+            }
+        }
+    })
+}
+
 UserSchema.statics.findByToken = function (token) {
     var User = this;
     var decoded;
@@ -109,14 +121,14 @@ UserSchema.statics.findByCredentials = function (email, password) {
                 return Promise.reject();
             }
             //create a new pormise since bcryptjs doe not use promises
-            return new Promise((resolve,reject)=>{
+            return new Promise((resolve, reject) => {
                 bcrypt.compare(password, user.password, (err, isValid) => {
                     if (err) {
                         reject();
                     }
                     if (isValid) {
                         resolve(user);
-                    }else {
+                    } else {
                         reject();
                     }
                 })
